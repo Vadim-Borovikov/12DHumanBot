@@ -158,6 +158,8 @@ internal sealed class FigureManager
 
         string rangePostfix = _bot.Config.GoogleRange.GetValue(nameof(_bot.Config.GoogleRange));
         string range = $"{title}!{rangePostfix}";
+
+        await _bot.GoogleSheetsProvider.ClearValuesAsync(range);
         await DataManager.UpdateValuesAsync(_bot.GoogleSheetsProvider, range, sorted);
 
         await _bot.Client.FinalizeStatusMessageAsync(statusMessage);
