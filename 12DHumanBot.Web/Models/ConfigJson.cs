@@ -37,11 +37,18 @@ public sealed class ConfigJson : IConvertibleTo<Config>
 
     [JsonProperty]
     public string? GoogleRange { get; set; }
+    [JsonProperty]
+    public string? GoogleRangeAll { get; set; }
 
     [JsonProperty]
     public string? AdminIdsJson { get; set; }
     [JsonProperty]
     public Dictionary<string, string?>? GoogleCredential { get; set; }
+
+    [JsonProperty]
+    public byte? MaxLength { get; set; }
+    [JsonProperty]
+    public Dictionary<string, string?>? LengthNames { get; set; }
 
     public Config Convert()
     {
@@ -60,6 +67,7 @@ public sealed class ConfigJson : IConvertibleTo<Config>
         string googleSheetId = GoogleSheetId.GetValue(nameof(GoogleSheetId));
 
         string googleRange = GoogleRange.GetValue(nameof(GoogleRange));
+        string googleRangeAll = GoogleRangeAll.GetValue(nameof(GoogleRangeAll));
 
         if (AdminIds is null || (AdminIds.Count == 0))
         {
@@ -67,8 +75,14 @@ public sealed class ConfigJson : IConvertibleTo<Config>
             AdminIds = JsonConvert.DeserializeObject<List<long?>>(json);
         }
 
+        byte maxLength = MaxLength.GetValue(nameof(MaxLength));
+        Dictionary<string, string?> lengthNames = LengthNames.GetValue(nameof(LengthNames));
+        Dictionary<byte, string> lengthNamesValue =
+            lengthNames.ToDictionary(p => p.Key.ToByte().GetValue(), p => p.Value.GetValue());
+
         return new Config(token, systemTimeZoneId, dontUnderstandStickerFileId, forbiddenStickerFileId,
-            sendMessageDelay, googleCredentialJson, applicationName, googleSheetId, googleRange)
+            sendMessageDelay, googleCredentialJson, applicationName, googleSheetId, googleRange, googleRangeAll,
+            maxLength, lengthNamesValue)
         {
             Host = Host,
             About = About is null ? null : string.Join(Environment.NewLine, About),
