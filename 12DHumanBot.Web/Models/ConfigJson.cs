@@ -39,6 +39,8 @@ public sealed class ConfigJson : IConvertibleTo<Config>
     public string? GoogleRange { get; set; }
     [JsonProperty]
     public string? GoogleRangeAll { get; set; }
+    [JsonProperty]
+    public string? GoogleRangeWorkingTemplate { get; set; }
 
     [JsonProperty]
     public string? AdminIdsJson { get; set; }
@@ -68,6 +70,7 @@ public sealed class ConfigJson : IConvertibleTo<Config>
 
         string googleRange = GoogleRange.GetValue(nameof(GoogleRange));
         string googleRangeAll = GoogleRangeAll.GetValue(nameof(GoogleRangeAll));
+        string googleRangeWorkingTemplate = GoogleRangeWorkingTemplate.GetValue(nameof(GoogleRangeWorkingTemplate));
 
         if (AdminIds is null || (AdminIds.Count == 0))
         {
@@ -82,7 +85,7 @@ public sealed class ConfigJson : IConvertibleTo<Config>
 
         return new Config(token, systemTimeZoneId, dontUnderstandStickerFileId, forbiddenStickerFileId,
             sendMessageDelay, googleCredentialJson, applicationName, googleSheetId, googleRange, googleRangeAll,
-            maxLength, lengthNamesValue)
+            googleRangeWorkingTemplate, maxLength, lengthNamesValue)
         {
             Host = Host,
             About = About is null ? null : string.Join(Environment.NewLine, About),

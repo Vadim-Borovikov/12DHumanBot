@@ -1,5 +1,4 @@
 ﻿using AbstractBot;
-using Google.Apis.Sheets.v4.Data;
 using GoogleSheetsManager;
 using GryphonUtilities;
 using Telegram.Bot.Types;
@@ -41,11 +40,15 @@ internal sealed class FigureManager
                 throw new NullReferenceException(nameof(f.Numbers));
             }
 
-            f.Vertices.AddRange(f.Numbers.Select(n => _vertices[n]));
+            foreach (byte n in f.Numbers)
+            {
+                f.Vertices.Add(_vertices[n]);
+            }
             _figures[f.GetCode()] = f;
         }
 
-        await _bot.Client.FinalizeStatusMessageAsync(statusMessage, $"{Environment.NewLine}Загружено фигур: {_figures.Count}\\.");
+        await _bot.Client.FinalizeStatusMessageAsync(statusMessage,
+            $"{Environment.NewLine}Загружено фигур: {_figures.Count}\\.");
     }
 
     public async Task Generate(ChatId chatId)
@@ -78,7 +81,8 @@ internal sealed class FigureManager
             }
         }
 
-        await _bot.Client.FinalizeStatusMessageAsync(statusMessage, $"{Environment.NewLine}Создано фигур: {_figures.Count}\\.");
+        await _bot.Client.FinalizeStatusMessageAsync(statusMessage,
+            $"{Environment.NewLine}Создано фигур: {_figures.Count}\\.");
 
         await Save(chatId, _figures.Values);
     }
@@ -105,8 +109,8 @@ internal sealed class FigureManager
 
         string range = _bot.Config.GoogleRange.GetValue(nameof(_bot.Config.GoogleRange));
         const int sheetIndex = 1;
-        Sheet sheet = await DataManager.GetSheet(_bot.GoogleSheetsProvider, sheetIndex);
-        IList<Figure> figures = await DataManager.GetValuesAsync(_bot.GoogleSheetsProvider, Figure.Load, sheet, range);
+        IList<Figure> figures =
+            await DataManager.GetValuesAsync(_bot.GoogleSheetsProvider, Figure.Load, sheetIndex, range);
         foreach (Figure f in figures)
         {
             Figure figure = _figures[f.GetCode()];
@@ -117,10 +121,47 @@ internal sealed class FigureManager
         await _bot.Client.FinalizeStatusMessageAsync(statusMessage);
 
         await Save(chatId, _figures.Values);
+    }
 
-        statusMessage = await _bot.SendTextMessageAsync(chatId, "_Удаляю рабочий лист…_", ParseMode.MarkdownV2);
-        await DataManager.DeleteSheetAsync(_bot.GoogleSheetsProvider, sheet);
+    public async Task<bool> TrySeparate(ChatId chatId, string code)
+    {
+        if (_figures is null || !_figures.ContainsKey(code))
+        {
+            return false;
+        }
+
+        string template =
+            _bot.Config.GoogleRangeWorkingTemplate.GetValue(nameof(_bot.Config.GoogleRangeWorkingTemplate));
+        string title = string.Format(template, code);
+        Message statusMessage =
+            await _bot.SendTextMessageAsync(chatId, $"_Настраиваю рабочий лист для {code}…_", ParseMode.MarkdownV2);
+        const int sheetIndex = 1;
+        await DataManager.RenameSheetAsync(_bot.GoogleSheetsProvider, sheetIndex, title);
+
+        Figure figure = _figures[code];
+        SortedSet<Figure> subfigures =
+            new(_figures.Values.Where(f => f.Vertices.All(v => figure.Vertices.Contains(v))));
+
+        List<Figure> sorted = new();
+        while (subfigures.Count > 1)
+        {
+            Figure first = subfigures.First();
+            sorted.Add(first);
+            subfigures.Remove(first);
+            SortedSet<Vertex> pairVertices = new(figure.Vertices.Except(first.Vertices));
+            string pairCode = Vertex.GetCode(pairVertices);
+            Figure pair = _figures[pairCode];
+            sorted.Add(pair);
+            subfigures.Remove(pair);
+        }
+        sorted.Add(subfigures.First());
+
+        string rangePostfix = _bot.Config.GoogleRange.GetValue(nameof(_bot.Config.GoogleRange));
+        string range = $"{title}!{rangePostfix}";
+        await DataManager.UpdateValuesAsync(_bot.GoogleSheetsProvider, range, sorted);
+
         await _bot.Client.FinalizeStatusMessageAsync(statusMessage);
+        return true;
     }
 
     private async Task Save(ChatId chatId, IEnumerable<Figure> figures)

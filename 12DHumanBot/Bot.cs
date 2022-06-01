@@ -1,6 +1,7 @@
 ﻿using _12DHumanBot.Commands;
 using _12DHumanBot.Model;
 using AbstractBot;
+using Telegram.Bot.Types;
 
 namespace _12DHumanBot;
 
@@ -23,5 +24,20 @@ public sealed class Bot : BotBaseGoogleSheets<Bot, Config>
         {
             await Manager.Load(Config.LogsChatId.Value);
         }
+    }
+
+    protected override async Task ProcessTextMessageAsync(Message textMessage, bool fromChat,
+        CommandBase<Bot, Config>? command = null, string? payload = null)
+    {
+        if (textMessage.Text is not null)
+        {
+            bool separated = await Manager.TrySeparate(textMessage.Chat.Id, textMessage.Text);
+            if (separated)
+            {
+                return;
+            }
+        }
+
+        await base.ProcessTextMessageAsync(textMessage, fromChat, command, payload);
     }
 }

@@ -3,11 +3,11 @@ using GryphonUtilities;
 
 namespace _12DHumanBot.Model;
 
-internal class Figure : ISavable
+internal class Figure : ISavable, IComparable<Figure>
 {
     IList<string> ISavable.Titles => Titles;
 
-    public readonly List<Vertex> Vertices = new();
+    public readonly SortedSet<Vertex> Vertices = new();
 
     public string? Name;
     public string? Comment;
@@ -16,9 +16,9 @@ internal class Figure : ISavable
 
     public byte GetLength() => (byte) Vertices.Count;
 
-    public string GetCode() => string.Join(CodeSeparator, Vertices.Select(v => v.Number));
+    public string GetCode() => Vertex.GetCode(Vertices);
 
-    public Figure(IEnumerable<Vertex> vertices) => Vertices = vertices.OrderBy(v => v.Number).ToList();
+    public Figure(IEnumerable<Vertex> vertices) => Vertices = new SortedSet<Vertex>(vertices);
 
     protected Figure() { }
 
@@ -51,6 +51,39 @@ internal class Figure : ISavable
             { NameTitle, Name },
             { CommentTitle, Comment },
         };
+    }
+
+    public int CompareTo(Figure? other)
+    {
+        if (ReferenceEquals(this, other))
+        {
+            return 0;
+        }
+
+        if (other is null)
+        {
+            return 1;
+        }
+
+        int lengthCompare = GetLength().CompareTo(other.GetLength());
+        if (lengthCompare != 0)
+        {
+            return lengthCompare;
+        }
+
+        // ReSharper disable once LoopCanBeConvertedToQuery
+        List<Vertex> myVertices = Vertices.ToList();
+        List<Vertex> othersVertices = other.Vertices.ToList();
+        for (int i = 0; i < Vertices.Count; ++i)
+        {
+            int c = myVertices[i].Number.CompareTo(othersVertices[i].Number);
+            if (c != 0)
+            {
+                return c;
+            }
+        }
+
+        return 0;
     }
 
     public static Dictionary<byte, string>? Types;

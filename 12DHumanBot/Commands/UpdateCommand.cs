@@ -6,7 +6,7 @@ namespace _12DHumanBot.Commands;
 internal sealed class UpdateCommand : CommandBase<Bot, Config>
 {
     protected override string Name => "update";
-    protected override string Description => "Обновить базу из второго листа и стереть его";
+    protected override string Description => "Обновить базу из рабочего листа";
 
     public override BotBase<Bot, Config>.AccessType Access => BotBase<Bot, Config>.AccessType.Admins;
 
