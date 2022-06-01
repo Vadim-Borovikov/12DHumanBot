@@ -33,17 +33,10 @@ internal sealed class FigureManager
             _figures[v.GetCode()] = v;
         }
 
+        FillFigures(figures);
+
         foreach (Figure f in figures.Where(f => f is not Vertex))
         {
-            if (f.Numbers is null)
-            {
-                throw new NullReferenceException(nameof(f.Numbers));
-            }
-
-            foreach (byte n in f.Numbers)
-            {
-                f.Vertices.Add(_vertices[n]);
-            }
             _figures[f.GetCode()] = f;
         }
 
@@ -111,6 +104,7 @@ internal sealed class FigureManager
         const int sheetIndex = 1;
         IList<Figure> figures =
             await DataManager.GetValuesAsync(_bot.GoogleSheetsProvider, Figure.Load, sheetIndex, range);
+        FillFigures(figures);
         foreach (Figure f in figures)
         {
             Figure figure = _figures[f.GetCode()];
@@ -164,6 +158,27 @@ internal sealed class FigureManager
 
         await _bot.Client.FinalizeStatusMessageAsync(statusMessage);
         return true;
+    }
+
+    private void FillFigures(IEnumerable<Figure> figures)
+    {
+        if (_vertices is null)
+        {
+            throw new NullReferenceException(nameof(_vertices));
+        }
+
+        foreach (Figure f in figures.Where(f => f is not Vertex))
+        {
+            if (f.Numbers is null)
+            {
+                throw new NullReferenceException(nameof(f.Numbers));
+            }
+
+            foreach (byte n in f.Numbers)
+            {
+                f.Vertices.Add(_vertices[n]);
+            }
+        }
     }
 
     private async Task Save(ChatId chatId, IEnumerable<Figure> figures)
