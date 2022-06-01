@@ -105,7 +105,7 @@ internal sealed class FigureManager
             throw new NullReferenceException(nameof(_figures));
         }
 
-        Message statusMessage = await _bot.SendTextMessageAsync(chatId, "_Обновляю данные…_", ParseMode.MarkdownV2);
+        Message statusMessage = await _bot.SendTextMessageAsync(chatId, "_Обновляю базу данными из рабочего листа…_", ParseMode.MarkdownV2);
 
         string range = _bot.Config.GoogleRange.GetValue(nameof(_bot.Config.GoogleRange));
         const int sheetIndex = 1;
