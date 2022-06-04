@@ -142,13 +142,15 @@ internal sealed class FigureManager
             Figure first = subfigures.First();
             sorted.Add(first);
             subfigures.Remove(first);
-            SortedSet<Vertex> pairVertices = new(figure.Vertices.Except(first.Vertices));
-            string pairCode = Vertex.GetCode(pairVertices);
-            Figure pair = _figures[pairCode];
+            Figure pair = GetComplimentary(first, figure);
             sorted.Add(pair);
             subfigures.Remove(pair);
         }
         sorted.Add(subfigures.First());
+
+        Figure maxFigure = _figures.Values.OrderByDescending(f => f.GetLength()).First();
+        Figure complimentary = GetComplimentary(figure, maxFigure);
+        sorted.Add(complimentary);
 
         string rangePostfix = _bot.Config.GoogleRange.GetValue(nameof(_bot.Config.GoogleRange));
         string range = $"{title}!{rangePostfix}";
@@ -158,6 +160,18 @@ internal sealed class FigureManager
 
         await _bot.Client.FinalizeStatusMessageAsync(statusMessage);
         return true;
+    }
+
+    private Figure GetComplimentary(Figure current, Figure full)
+    {
+        if (_figures is null)
+        {
+            throw new NullReferenceException(nameof(_figures));
+        }
+
+        SortedSet<Vertex> vertices = new(full.Vertices.Except(current.Vertices));
+        string code = Vertex.GetCode(vertices);
+        return _figures[code];
     }
 
     private void FillFigures(IEnumerable<Figure> figures)
