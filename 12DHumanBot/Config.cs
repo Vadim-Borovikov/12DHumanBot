@@ -15,11 +15,12 @@ public sealed class Config : ConfigGoogleSheets
     internal long? LogsChatId => SuperAdminId;
 
     public Config(string token, string systemTimeZoneId, string dontUnderstandStickerFileId,
-        string forbiddenStickerFileId, TimeSpan sendMessageDelay, string googleCredentialJson, string applicationName,
-        string googleSheetId, string googleRange, string googleRangeAll, string googleRangeWorkingTemplate,
-        byte maxLength, Dictionary<byte, string> lengthNames)
-        : base(token, systemTimeZoneId, dontUnderstandStickerFileId, forbiddenStickerFileId, sendMessageDelay,
-            googleCredentialJson, applicationName, googleSheetId)
+        string forbiddenStickerFileId, TimeSpan sendMessagePeriodPrivate, TimeSpan sendMessagePeriodGroup,
+        TimeSpan sendMessageDelayGlobal, string googleCredentialJson, string applicationName, string googleSheetId,
+        string googleRange, string googleRangeAll, string googleRangeWorkingTemplate, byte maxLength,
+        Dictionary<byte, string> lengthNames)
+        : base(token, systemTimeZoneId, dontUnderstandStickerFileId, forbiddenStickerFileId, sendMessagePeriodPrivate,
+            sendMessagePeriodGroup, sendMessageDelayGlobal, googleCredentialJson, applicationName, googleSheetId)
     {
         GoogleRange = googleRange;
         GoogleRangeAll = googleRangeAll;

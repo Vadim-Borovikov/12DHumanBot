@@ -2,6 +2,7 @@
 using _12DHumanBot.Model;
 using AbstractBot;
 using Telegram.Bot.Types;
+using Telegram.Bot.Types.Enums;
 
 namespace _12DHumanBot;
 
@@ -22,7 +23,12 @@ public sealed class Bot : BotBaseGoogleSheets<Bot, Config>
 
         if (Config.LogsChatId.HasValue)
         {
-            await Manager.Load(Config.LogsChatId.Value);
+            Chat logsChat = new()
+            {
+                Id = Config.LogsChatId.Value,
+                Type = ChatType.Private
+            };
+            await Manager.Load(logsChat);
         }
     }
 
@@ -31,7 +37,7 @@ public sealed class Bot : BotBaseGoogleSheets<Bot, Config>
     {
         if (textMessage.Text is not null)
         {
-            bool separated = await Manager.TrySeparate(textMessage.Chat.Id, textMessage.Text);
+            bool separated = await Manager.TrySeparate(textMessage.Chat, textMessage.Text);
             if (separated)
             {
                 return;

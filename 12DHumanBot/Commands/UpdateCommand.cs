@@ -14,6 +14,6 @@ internal sealed class UpdateCommand : CommandBase<Bot, Config>
 
     public override Task ExecuteAsync(Message message, bool fromChat, string? payload)
     {
-        return Bot.Manager.Update(message.Chat.Id);
+        return Bot.Manager.Update(message.Chat);
     }
 }

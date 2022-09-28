@@ -23,7 +23,7 @@ internal sealed class Vertex : Figure
         Comment = comment;
     }
 
-    public static string GetCode(SortedSet<Vertex> vertices)
+    public static string GetCode(IEnumerable<Vertex> vertices)
     {
         return string.Join(CodeSeparator, vertices.Select(v => v.Number));
     }

@@ -14,6 +14,6 @@ internal sealed class GenerateCommand : CommandBase<Bot, Config>
 
     public override Task ExecuteAsync(Message message, bool fromChat, string? payload)
     {
-        return Bot.Manager.Generate(message.Chat.Id);
+        return Bot.Manager.Generate(message.Chat);
     }
 }

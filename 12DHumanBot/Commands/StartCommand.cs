@@ -15,6 +15,6 @@ internal sealed class StartCommand : CommandBase<Bot, Config>
     public override Task ExecuteAsync(Message message, bool fromChat, string? payload)
     {
         User user = message.From.GetValue(nameof(message.From));
-        return Bot.SendTextMessageAsync(user.Id, Bot.GetDescriptionFor(user.Id), ParseMode.MarkdownV2);
+        return Bot.SendTextMessageAsync(message.Chat, Bot.GetDescriptionFor(user.Id), ParseMode.MarkdownV2);
     }
 }
