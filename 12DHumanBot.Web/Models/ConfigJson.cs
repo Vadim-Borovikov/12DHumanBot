@@ -88,13 +88,13 @@ public sealed class ConfigJson : IConvertibleTo<Config>
             string json = AdminIdsJson.GetValue(nameof(AdminIdsJson));
             AdminIds = JsonConvert.DeserializeObject<List<long?>>(json);
         }
+        IEnumerable<long> adminIds =
+            AdminIds is null ? Enumerable.Empty<long>() : AdminIds.Select(id => id.GetValue("Admin id"));
 
         byte maxLength = MaxLength.GetValue(nameof(MaxLength));
         Dictionary<string, string?> lengthNames = LengthNames.GetValue(nameof(LengthNames));
         Dictionary<byte, string> lengthNamesValue =
             lengthNames.ToDictionary(p => p.Key.ToByte().GetValue(), p => p.Value.GetValue());
-        IEnumerable<long> adminIds =
-            AdminIds is null ? Enumerable.Empty<long>() : AdminIds.Select(id => id.GetValue("Admin id"));
 
         return new Config(token, systemTimeZoneId, dontUnderstandStickerFileId, forbiddenStickerFileId,
             sendMessagePeriodPrivate, sendMessagePeriodGroup, sendMessagePeriodGlobal, googleCredentialJson,
