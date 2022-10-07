@@ -21,11 +21,12 @@ public sealed class Bot : BotBaseGoogleSheets<Bot, Config>
 
         await base.StartAsync(cancellationToken);
 
-        if (Config.LogsChatId.HasValue)
+        long? logsChatId = Config.SuperAdminId;
+        if (logsChatId.HasValue)
         {
             Chat logsChat = new()
             {
-                Id = Config.LogsChatId.Value,
+                Id = logsChatId.Value,
                 Type = ChatType.Private
             };
             await Manager.Load(logsChat);

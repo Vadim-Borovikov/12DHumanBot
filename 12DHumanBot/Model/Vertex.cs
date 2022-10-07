@@ -15,16 +15,16 @@ internal sealed class Vertex : Figure
     }
 
     public Vertex(byte number, string? name = null, string? comment = null)
+        : base(new List<byte> { number }, name, comment)
     {
         Number = number;
         Vertices.Add(this);
-
-        Name = name;
-        Comment = comment;
     }
 
     public static string GetCode(IEnumerable<Vertex> vertices)
     {
         return string.Join(CodeSeparator, vertices.Select(v => v.Number));
     }
+
+    public const string CodeSeparator = ";";
 }

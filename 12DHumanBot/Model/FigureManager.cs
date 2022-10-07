@@ -14,14 +14,16 @@ internal sealed class FigureManager
     public FigureManager(Bot bot)
     {
         _bot = bot;
-        Figure.Types = _bot.Config.LengthNames;
+
+        Figure.Types = _bot.Config.LengthNames.ToDictionary(p => p.Key.ToByte().GetValue(), p => p.Value);
     }
 
     public async Task Load(Chat chat)
     {
         Message statusMessage = await _bot.SendTextMessageAsync(chat, "_Загружаю базу…_", ParseMode.MarkdownV2);
-        string range = _bot.Config.GoogleRangeAll.GetValue(nameof(_bot.Config.GoogleRangeAll));
-        IList<Figure> figures = await DataManager.GetValuesAsync(_bot.GoogleSheetsProvider, Figure.Load, range);
+        SheetData<FigureInfo> data =
+            await DataManager.GetValuesAsync<FigureInfo>(_bot.GoogleSheetsProvider, _bot.Config.GoogleRangeAll);
+        List<Figure> figures = data.Instances.Select(Figure.Load).RemoveNulls().ToList();
 
         _vertices = new Dictionary<byte, Vertex>();
         _figures = new Dictionary<string, Figure>();
@@ -76,7 +78,8 @@ internal sealed class FigureManager
         await _bot.FinalizeStatusMessageAsync(statusMessage,
             $"{Environment.NewLine}Создано фигур: {_figures.Count}\\.");
 
-        await Save(chat, _figures.Values);
+        List<string> titles = await DataManager.GetTitlesAsync(_bot.GoogleSheetsProvider, _bot.Config.GoogleRangeAll);
+        await Save(chat, _figures.Values, titles);
     }
 
     public async Task Update(Chat chat)
@@ -100,10 +103,10 @@ internal sealed class FigureManager
         Message statusMessage =
             await _bot.SendTextMessageAsync(chat, "_Обновляю базу данными из рабочего листа…_", ParseMode.MarkdownV2);
 
-        string range = _bot.Config.GoogleRange.GetValue(nameof(_bot.Config.GoogleRange));
         const int sheetIndex = 1;
-        IList<Figure> figures =
-            await DataManager.GetValuesAsync(_bot.GoogleSheetsProvider, Figure.Load, sheetIndex, range);
+        SheetData<FigureInfo> data = await DataManager.GetValuesAsync<FigureInfo>(_bot.GoogleSheetsProvider,
+            sheetIndex, _bot.Config.GoogleRange);
+        List<Figure> figures = data.Instances.Select(Figure.Load).RemoveNulls().ToList();
         FillFigures(figures);
         foreach (Figure f in figures)
         {
@@ -114,7 +117,7 @@ internal sealed class FigureManager
 
         await _bot.FinalizeStatusMessageAsync(statusMessage);
 
-        await Save(chat, _figures.Values);
+        await Save(chat, _figures.Values, data.Titles);
     }
 
     public async Task<bool> TrySeparate(Chat chat, string code)
@@ -124,9 +127,7 @@ internal sealed class FigureManager
             return false;
         }
 
-        string template =
-            _bot.Config.GoogleRangeWorkingTemplate.GetValue(nameof(_bot.Config.GoogleRangeWorkingTemplate));
-        string title = string.Format(template, code);
+        string title = string.Format(_bot.Config.GoogleRangeWorkingTemplate, code);
         Message statusMessage =
             await _bot.SendTextMessageAsync(chat, $"_Настраиваю рабочий лист для {code}…_", ParseMode.MarkdownV2);
         const int sheetIndex = 1;
@@ -152,11 +153,14 @@ internal sealed class FigureManager
         Figure complimentary = GetComplimentary(figure, maxFigure);
         sorted.Add(complimentary);
 
-        string rangePostfix = _bot.Config.GoogleRange.GetValue(nameof(_bot.Config.GoogleRange));
-        string range = $"{title}!{rangePostfix}";
+        string range = $"{title}!{_bot.Config.GoogleRange}";
 
         await _bot.GoogleSheetsProvider.ClearValuesAsync(range);
-        await DataManager.UpdateValuesAsync(_bot.GoogleSheetsProvider, range, sorted);
+
+        List<FigureInfo> infos = sorted.Select(f => f.Convert()).ToList();
+        List<string> titles = await DataManager.GetTitlesAsync(_bot.GoogleSheetsProvider, _bot.Config.GoogleRange);
+        SheetData<FigureInfo> data = new(infos, titles);
+        await DataManager.UpdateValuesAsync(_bot.GoogleSheetsProvider, range, data);
 
         await _bot.FinalizeStatusMessageAsync(statusMessage);
         return true;
@@ -195,13 +199,12 @@ internal sealed class FigureManager
         }
     }
 
-    private async Task Save(Chat chat, IEnumerable<Figure> figures)
+    private async Task Save(Chat chat, IEnumerable<Figure> figures, IList<string> titles)
     {
         Message statusMessage =
             await _bot.SendTextMessageAsync(chat, "_Сохраняю базу в таблицу…_", ParseMode.MarkdownV2);
-        string range = _bot.Config.GoogleRangeAll.GetValue(nameof(_bot.Config.GoogleRangeAll));
-        await DataManager.UpdateValuesAsync(_bot.GoogleSheetsProvider, range,
-            figures.OrderBy(f => f.GetLength()).ToList());
+        SheetData<FigureInfo> data = new(figures.OrderBy(f => f.GetLength()).Select(f => f.Convert()).ToList(), titles);
+        await DataManager.UpdateValuesAsync(_bot.GoogleSheetsProvider, _bot.Config.GoogleRangeAll, data);
         await _bot.FinalizeStatusMessageAsync(statusMessage);
     }
 }

@@ -1,31 +1,30 @@
-﻿using AbstractBot;
+﻿using System.ComponentModel.DataAnnotations;
+using AbstractBot;
+using JetBrains.Annotations;
+
+// ReSharper disable NullableWarningSuppressionIsUsed
 
 namespace _12DHumanBot;
 
-public sealed class Config : ConfigGoogleSheets
+[PublicAPI]
+public class Config : ConfigGoogleSheets
 {
-    public readonly string GoogleRange;
-    public readonly string GoogleRangeAll;
-    public readonly string GoogleRangeWorkingTemplate;
+    [Required]
+    [MinLength(1)]
+    public string GoogleRange { get; init; } = null!;
 
-    internal readonly byte MaxLength;
+    [Required]
+    [MinLength(1)]
+    public string GoogleRangeAll { get; init; } = null!;
 
-    internal readonly Dictionary<byte, string> LengthNames;
+    [Required]
+    [MinLength(1)]
+    public string GoogleRangeWorkingTemplate { get; init; } = null!;
 
-    internal long? LogsChatId => SuperAdminId;
+    [Required]
+    [Range(1, byte.MaxValue)]
+    public byte MaxLength { get; init; }
 
-    public Config(string token, string systemTimeZoneId, string dontUnderstandStickerFileId,
-        string forbiddenStickerFileId, TimeSpan sendMessagePeriodPrivate, TimeSpan sendMessagePeriodGroup,
-        TimeSpan sendMessageDelayGlobal, string googleCredentialJson, string applicationName, string googleSheetId,
-        string googleRange, string googleRangeAll, string googleRangeWorkingTemplate, byte maxLength,
-        Dictionary<byte, string> lengthNames)
-        : base(token, systemTimeZoneId, dontUnderstandStickerFileId, forbiddenStickerFileId, sendMessagePeriodPrivate,
-            sendMessagePeriodGroup, sendMessageDelayGlobal, googleCredentialJson, applicationName, googleSheetId)
-    {
-        GoogleRange = googleRange;
-        GoogleRangeAll = googleRangeAll;
-        GoogleRangeWorkingTemplate = googleRangeWorkingTemplate;
-        MaxLength = maxLength;
-        LengthNames = lengthNames;
-    }
+    [Required]
+    public Dictionary<string, string> LengthNames { get; init; } = null!;
 }

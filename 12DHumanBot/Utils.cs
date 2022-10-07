@@ -1,5 +1,4 @@
 ﻿using _12DHumanBot.Model;
-using GoogleSheetsManager;
 using GryphonUtilities;
 
 namespace _12DHumanBot;
@@ -12,6 +11,15 @@ internal static class Utils
         {
             return l.ToList();
         }
-        return o?.ToString()?.Split(Figure.CodeSeparator).Select(s => s.ToByte()).RemoveNulls().ToList();
+        return o?.ToString()?.Split(Vertex.CodeSeparator).Select(s => s.ToByte()).RemoveNulls().ToList();
+    }
+
+    public static byte? ToByte(this object? o)
+    {
+        if (o is byte b)
+        {
+            return b;
+        }
+        return byte.TryParse(o?.ToString(), out b) ? b : null;
     }
 }

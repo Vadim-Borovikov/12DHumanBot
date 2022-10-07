@@ -1,12 +1,7 @@
-﻿using GoogleSheetsManager;
-using GryphonUtilities;
+﻿namespace _12DHumanBot.Model;
 
-namespace _12DHumanBot.Model;
-
-internal class Figure : ISavable, IComparable<Figure>
+internal class Figure : IComparable<Figure>
 {
-    IList<string> ISavable.Titles => Titles;
-
     public readonly SortedSet<Vertex> Vertices = new();
 
     public string? Name;
@@ -20,37 +15,11 @@ internal class Figure : ISavable, IComparable<Figure>
 
     public Figure(IEnumerable<Vertex> vertices) => Vertices = new SortedSet<Vertex>(vertices);
 
-    protected Figure() { }
-
-    private Figure(List<byte> numbers, string? name, string? comment)
+    protected Figure(List<byte> numbers, string? name, string? comment)
     {
         Numbers = numbers;
         Name = name;
         Comment = comment;
-    }
-
-    public static Figure Load(IDictionary<string, object?> valueSet)
-    {
-        List<byte> numbers = valueSet[VerticesTitle].ToBytes().GetValue(VerticesTitle);
-        string? name = valueSet[NameTitle]?.ToString();
-        string? comment = valueSet[CommentTitle]?.ToString();
-
-        return numbers.Count > 1
-            ? new Figure(numbers, name, comment)
-            : new Vertex(numbers[0], name, comment);
-    }
-
-    public IDictionary<string, object?> Convert()
-    {
-        return new Dictionary<string, object?>
-        {
-            { VerticesTitle, GetCode() },
-            { VerticesNamesTitle, string.Join(NamesSeparator, Vertices.Select(v => v.GetName())) },
-            { LengthTitle, GetLength() },
-            { TypeTitle, Types?[GetLength()] },
-            { NameTitle, Name },
-            { CommentTitle, Comment },
-        };
     }
 
     public int CompareTo(Figure? other)
@@ -86,25 +55,36 @@ internal class Figure : ISavable, IComparable<Figure>
         return 0;
     }
 
+    public static Figure? Load(FigureInfo info)
+    {
+        List<byte>? numbers = info.VerticesNumbers.ToBytes();
+        if (numbers is null)
+        {
+            return null;
+        }
+
+        string? name = info.Name;
+        string? comment = info.Comment;
+
+        return numbers.Count > 1
+            ? new Figure(numbers, name, comment)
+            : new Vertex(numbers[0], name, comment);
+    }
+
+    public FigureInfo Convert()
+    {
+        return new FigureInfo
+        {
+            VerticesNumbers = GetCode(),
+            VerticesNames = string.Join(NamesSeparator, Vertices.Select(v => v.GetName())),
+            Length = GetLength(),
+            Type = Types?[GetLength()],
+            Name = Name,
+            Comment = Comment,
+        };
+    }
+
     public static Dictionary<byte, string>? Types;
 
-    private static readonly IList<string> Titles = new List<string>
-    {
-        VerticesTitle,
-        VerticesNamesTitle,
-        LengthTitle,
-        TypeTitle,
-        NameTitle,
-        CommentTitle,
-    };
-
-    private const string VerticesTitle = "Номера вершин";
-    private const string VerticesNamesTitle = "Названия вершин";
-    private const string LengthTitle = "Длина";
-    private const string TypeTitle = "Тип";
-    private const string NameTitle = "Название";
-    private const string CommentTitle = "Комментарий";
-
-    public const string CodeSeparator = ";";
     private const string NamesSeparator = "; ";
 }
