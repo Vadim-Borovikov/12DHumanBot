@@ -22,7 +22,7 @@ internal sealed class FigureManager
     {
         Message statusMessage = await _bot.SendTextMessageAsync(chat, "_Загружаю базу…_", ParseMode.MarkdownV2);
         SheetData<FigureInfo> data =
-            await DataManager.GetValuesAsync<FigureInfo>(_bot.GoogleSheetsProvider, _bot.Config.GoogleRangeAll);
+            await DataManager<FigureInfo>.LoadAsync(_bot.GoogleSheetsProvider, _bot.Config.GoogleRangeAll);
         List<Figure> figures = data.Instances.Select(Figure.Load).RemoveNulls().ToList();
 
         _vertices = new Dictionary<byte, Vertex>();
@@ -78,7 +78,8 @@ internal sealed class FigureManager
         await _bot.FinalizeStatusMessageAsync(statusMessage,
             $"{Environment.NewLine}Создано фигур: {_figures.Count}\\.");
 
-        List<string> titles = await DataManager.GetTitlesAsync(_bot.GoogleSheetsProvider, _bot.Config.GoogleRangeAll);
+        List<string> titles =
+            await GoogleSheetsManager.Utils.LoadTitlesAsync(_bot.GoogleSheetsProvider, _bot.Config.GoogleRangeAll);
         await Save(chat, _figures.Values, titles);
     }
 
@@ -104,8 +105,8 @@ internal sealed class FigureManager
             await _bot.SendTextMessageAsync(chat, "_Обновляю базу данными из рабочего листа…_", ParseMode.MarkdownV2);
 
         const int sheetIndex = 1;
-        SheetData<FigureInfo> data = await DataManager.GetValuesAsync<FigureInfo>(_bot.GoogleSheetsProvider,
-            sheetIndex, _bot.Config.GoogleRange);
+        SheetData<FigureInfo> data = await DataManager<FigureInfo>.LoadAsync(_bot.GoogleSheetsProvider,
+            _bot.Config.GoogleRange, sheetIndex);
         List<Figure> figures = data.Instances.Select(Figure.Load).RemoveNulls().ToList();
         FillFigures(figures);
         foreach (Figure f in figures)
@@ -131,7 +132,7 @@ internal sealed class FigureManager
         Message statusMessage =
             await _bot.SendTextMessageAsync(chat, $"_Настраиваю рабочий лист для {code}…_", ParseMode.MarkdownV2);
         const int sheetIndex = 1;
-        await DataManager.RenameSheetAsync(_bot.GoogleSheetsProvider, sheetIndex, title);
+        await GoogleSheetsManager.Utils.RenameSheetAsync(_bot.GoogleSheetsProvider, sheetIndex, title);
 
         Figure figure = _figures[code];
         SortedSet<Figure> subfigures =
@@ -158,9 +159,10 @@ internal sealed class FigureManager
         await _bot.GoogleSheetsProvider.ClearValuesAsync(range);
 
         List<FigureInfo> infos = sorted.Select(f => f.Convert()).ToList();
-        List<string> titles = await DataManager.GetTitlesAsync(_bot.GoogleSheetsProvider, _bot.Config.GoogleRange);
+        List<string> titles =
+            await GoogleSheetsManager.Utils.LoadTitlesAsync(_bot.GoogleSheetsProvider, _bot.Config.GoogleRange);
         SheetData<FigureInfo> data = new(infos, titles);
-        await DataManager.UpdateValuesAsync(_bot.GoogleSheetsProvider, range, data);
+        await DataManager<FigureInfo>.SaveAsync(_bot.GoogleSheetsProvider, range, data);
 
         await _bot.FinalizeStatusMessageAsync(statusMessage);
         return true;
@@ -204,7 +206,7 @@ internal sealed class FigureManager
         Message statusMessage =
             await _bot.SendTextMessageAsync(chat, "_Сохраняю базу в таблицу…_", ParseMode.MarkdownV2);
         SheetData<FigureInfo> data = new(figures.OrderBy(f => f.GetLength()).Select(f => f.Convert()).ToList(), titles);
-        await DataManager.UpdateValuesAsync(_bot.GoogleSheetsProvider, _bot.Config.GoogleRangeAll, data);
+        await DataManager<FigureInfo>.SaveAsync(_bot.GoogleSheetsProvider, _bot.Config.GoogleRangeAll, data);
         await _bot.FinalizeStatusMessageAsync(statusMessage);
     }
 }
