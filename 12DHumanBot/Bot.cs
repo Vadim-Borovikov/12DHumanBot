@@ -1,6 +1,7 @@
 ﻿using _12DHumanBot.Commands;
 using _12DHumanBot.Model;
 using AbstractBot;
+using AbstractBot.Commands;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 
@@ -14,7 +15,6 @@ public sealed class Bot : BotBaseGoogleSheets<Bot, Config>
 
     public override async Task StartAsync(CancellationToken cancellationToken)
     {
-        Commands.Add(new StartCommand(this));
         Commands.Add(new GenerateCommand(this));
         Commands.Add(new LoadCommand(this));
         Commands.Add(new UpdateCommand(this));
