@@ -14,8 +14,7 @@ internal sealed class Vertex : Figure
         return Types is null ? "" : $"{{{Types[1]} {Number}}}";
     }
 
-    public Vertex(byte number, string? name = null, string? comment = null)
-        : base(new List<byte> { number }, name, comment)
+    public Vertex(byte number, string? name = null, string? comment = null) : base(name, comment)
     {
         Number = number;
         Vertices.Add(this);

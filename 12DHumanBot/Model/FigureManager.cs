@@ -21,25 +21,19 @@ internal sealed class FigureManager
     public async Task Load(Chat chat)
     {
         Message statusMessage = await _bot.SendTextMessageAsync(chat, "_Загружаю базу…_", ParseMode.MarkdownV2);
-        SheetData<FigureInfo> data =
-            await DataManager<FigureInfo>.LoadAsync(_bot.GoogleSheetsProvider, _bot.Config.GoogleRangeAll);
-        List<Figure> figures = data.Instances.Select(Figure.Load).RemoveNulls().ToList();
+        SheetData<FigureInfo> data = await DataManager<FigureInfo>.LoadAsync(_bot.GoogleSheetsProvider,
+            _bot.Config.GoogleRangeAll, additionalConverters: AdditionalConverters);
 
-        _vertices = new Dictionary<byte, Vertex>();
-        _figures = new Dictionary<string, Figure>();
+        _vertices = data.Instances
+                        .Where(i => i.Length == 1)
+                        .Select(i => i.Convert())
+                        .OfType<Vertex>()
+                        .ToDictionary(v => v.Number, v => v);
 
-        foreach (Vertex v in figures.OfType<Vertex>())
-        {
-            _vertices[v.Number] = v;
-            _figures[v.GetCode()] = v;
-        }
-
-        FillFigures(figures);
-
-        foreach (Figure f in figures.Where(f => f is not Vertex))
-        {
-            _figures[f.GetCode()] = f;
-        }
+        _figures = data.Instances
+                       .Select(i => i.Convert(_vertices))
+                       .RemoveNulls()
+                       .ToDictionary(f => f.GetCode(), f => f);
 
         await _bot.FinalizeStatusMessageAsync(statusMessage,
             $"{Environment.NewLine}Загружено фигур: {_figures.Count}\\.");
@@ -106,10 +100,10 @@ internal sealed class FigureManager
 
         const int sheetIndex = 1;
         SheetData<FigureInfo> data = await DataManager<FigureInfo>.LoadAsync(_bot.GoogleSheetsProvider,
-            _bot.Config.GoogleRange, sheetIndex);
-        List<Figure> figures = data.Instances.Select(Figure.Load).RemoveNulls().ToList();
-        FillFigures(figures);
-        foreach (Figure f in figures)
+            _bot.Config.GoogleRange, sheetIndex, additionalConverters: AdditionalConverters);
+        foreach (Figure f in data.Instances
+                                 .Select(i => i.Convert(_vertices))
+                                 .RemoveNulls())
         {
             Figure figure = _figures[f.GetCode()];
             figure.Name = f.Name;
@@ -180,27 +174,6 @@ internal sealed class FigureManager
         return _figures[code];
     }
 
-    private void FillFigures(IEnumerable<Figure> figures)
-    {
-        if (_vertices is null)
-        {
-            throw new NullReferenceException(nameof(_vertices));
-        }
-
-        foreach (Figure f in figures.Where(f => f is not Vertex))
-        {
-            if (f.Numbers is null)
-            {
-                throw new NullReferenceException(nameof(f.Numbers));
-            }
-
-            foreach (byte n in f.Numbers)
-            {
-                f.Vertices.Add(_vertices[n]);
-            }
-        }
-    }
-
     private async Task Save(Chat chat, IEnumerable<Figure> figures, IList<string> titles)
     {
         Message statusMessage =
@@ -209,4 +182,9 @@ internal sealed class FigureManager
         await DataManager<FigureInfo>.SaveAsync(_bot.GoogleSheetsProvider, _bot.Config.GoogleRangeAll, data);
         await _bot.FinalizeStatusMessageAsync(statusMessage);
     }
+
+    private static readonly Dictionary<Type, Func<object?, object?>> AdditionalConverters = new()
+    {
+        { typeof(byte), o => o.ToByte() }
+    };
 }

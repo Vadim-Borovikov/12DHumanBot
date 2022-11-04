@@ -7,17 +7,17 @@ internal class Figure : IComparable<Figure>
     public string? Name;
     public string? Comment;
 
-    public readonly List<byte>? Numbers;
-
     public byte GetLength() => (byte) Vertices.Count;
 
     public string GetCode() => Vertex.GetCode(Vertices);
 
-    public Figure(IEnumerable<Vertex> vertices) => Vertices = new SortedSet<Vertex>(vertices);
-
-    protected Figure(List<byte> numbers, string? name, string? comment)
+    public Figure(IEnumerable<Vertex> vertices, string? name = null, string? comment = null) : this(name, comment)
     {
-        Numbers = numbers;
+        Vertices = new SortedSet<Vertex>(vertices);
+    }
+
+    protected Figure(string? name, string? comment)
+    {
         Name = name;
         Comment = comment;
     }
@@ -53,22 +53,6 @@ internal class Figure : IComparable<Figure>
         }
 
         return 0;
-    }
-
-    public static Figure? Load(FigureInfo info)
-    {
-        List<byte>? numbers = info.VerticesNumbers.ToBytes();
-        if (numbers is null)
-        {
-            return null;
-        }
-
-        string? name = info.Name;
-        string? comment = info.Comment;
-
-        return numbers.Count > 1
-            ? new Figure(numbers, name, comment)
-            : new Vertex(numbers[0], name, comment);
     }
 
     public FigureInfo Convert()

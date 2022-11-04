@@ -26,4 +26,16 @@ internal sealed class FigureInfo
 
     [SheetField("Комментарий")]
     public string? Comment;
+
+    public Figure? Convert(Dictionary<byte, Vertex>? vertices = null)
+    {
+        List<byte>? numbers = VerticesNumbers.ToBytes();
+        return numbers?.Count switch
+        {
+            null => null,
+            0    => null,
+            1    => new Vertex(numbers[0], Name, Comment),
+            _    => vertices is null ? null : new Figure(numbers.Select(n => vertices[n]), Name, Comment)
+        };
+    }
 }
