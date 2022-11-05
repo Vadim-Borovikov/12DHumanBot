@@ -31,9 +31,15 @@ internal sealed class FigureManager
                         .ToDictionary(v => v.Number, v => v);
 
         _figures = data.Instances
+                       .Where(i => i.Length > 1)
                        .Select(i => i.Convert(_vertices))
                        .RemoveNulls()
                        .ToDictionary(f => f.GetCode(), f => f);
+
+        foreach (Vertex v in _vertices.Values)
+        {
+            _figures[v.GetCode()] = v;
+        }
 
         await _bot.FinalizeStatusMessageAsync(statusMessage,
             $"{Environment.NewLine}Загружено фигур: {_figures.Count}\\.");
