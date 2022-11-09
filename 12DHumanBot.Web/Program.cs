@@ -14,7 +14,7 @@ internal static class Program
             WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
             Config config = Configure(builder);
-            Utils.StartLogWith(config.SystemTimeZoneId);
+            Utils.StartLogWith(config.SystemTimeZoneIdLogs);
 
             IServiceCollection services = builder.Services;
             services.AddControllersWithViews().AddNewtonsoftJson();
