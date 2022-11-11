@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net7.0</TargetFramework>
     <RootNamespace>_$(MSBuildProjectName.Replace(" ", "_"))</RootNamespace>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
@@ -9,8 +9,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="AbstractBot" Version="44.0.0" />
-    <PackageReference Include="GryphonUtilities" Version="2.0.0" />
+    <PackageReference Include="AbstractBot" Version="45.0.1" />
+    <PackageReference Include="GryphonUtilities" Version="3.0.0" />
   </ItemGroup>
 
 </Project>

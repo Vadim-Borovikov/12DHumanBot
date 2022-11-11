@@ -13,7 +13,11 @@ internal static class Program
         {
             WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
-            Config config = Configure(builder);
+            Config? config = Configure(builder);
+            if (config is null)
+            {
+                throw new NullReferenceException("Can't load config.");
+            }
             Utils.StartLogWith(config.SystemTimeZoneIdLogs);
 
             IServiceCollection services = builder.Services;
@@ -41,10 +45,14 @@ internal static class Program
         }
     }
 
-    private static Config Configure(WebApplicationBuilder builder)
+    private static Config? Configure(WebApplicationBuilder builder)
     {
         ConfigurationManager configuration = builder.Configuration;
-        Config config = configuration.Get<Config>();
+        Config? config = configuration.Get<Config>();
+        if (config is null)
+        {
+            return null;
+        }
 
         builder.Services.AddOptions<Config>().Bind(configuration).ValidateDataAnnotations();
         builder.Services.AddSingleton(resolver => resolver.GetRequiredService<IOptions<Config>>().Value);
