@@ -34,7 +34,7 @@ public sealed class Bot : BotBaseGoogleSheets<Bot, Config>
     }
 
     protected override async Task ProcessTextMessageAsync(Message textMessage, bool fromChat,
-        CommandBase<Bot, Config>? command = null, string? payload = null)
+        CommandBase? command = null, string? payload = null)
     {
         if (textMessage.Text is not null)
         {

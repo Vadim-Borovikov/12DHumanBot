@@ -4,9 +4,9 @@ using Telegram.Bot.Types;
 
 namespace _12DHumanBot.Commands;
 
-internal sealed class UpdateCommand : CommandBase<Bot, Config>
+internal sealed class UpdateCommand : CommandBaseCustom<Bot, Config>
 {
-    public override BotBase<Bot, Config>.AccessType Access => BotBase<Bot, Config>.AccessType.Admins;
+    public override BotBase.AccessType Access => BotBase.AccessType.Admins;
 
     public UpdateCommand(Bot bot) : base(bot, "update", "обновить базу из рабочего листа") { }
 

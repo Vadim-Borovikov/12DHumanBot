@@ -4,9 +4,9 @@ using Telegram.Bot.Types;
 
 namespace _12DHumanBot.Commands;
 
-internal sealed class GenerateCommand : CommandBase<Bot, Config>
+internal sealed class GenerateCommand : CommandBaseCustom<Bot, Config>
 {
-    public override BotBase<Bot, Config>.AccessType Access => BotBase<Bot, Config>.AccessType.SuperAdmin;
+    public override BotBase.AccessType Access => BotBase.AccessType.SuperAdmin;
 
     public GenerateCommand(Bot bot) : base(bot, "generate", "сгенерировать базу с нуля") { }
 

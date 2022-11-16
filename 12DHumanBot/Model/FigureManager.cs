@@ -150,7 +150,7 @@ internal sealed class FigureManager
         }
         sorted.Add(subfigures.First());
 
-        Figure maxFigure = _figures.Values.OrderByDescending(f => f.GetLength()).First();
+        Figure maxFigure = _figures.Values.OrderDescending().First();
         Figure complimentary = GetComplimentary(figure, maxFigure);
         sorted.Add(complimentary);
 
@@ -184,7 +184,7 @@ internal sealed class FigureManager
     {
         Message statusMessage =
             await _bot.SendTextMessageAsync(chat, "_Сохраняю базу в таблицу…_", ParseMode.MarkdownV2);
-        SheetData<FigureInfo> data = new(figures.OrderBy(f => f.GetLength()).Select(f => f.Convert()).ToList(), titles);
+        SheetData<FigureInfo> data = new(figures.Order().Select(f => f.Convert()).ToList(), titles);
         await DataManager<FigureInfo>.SaveAsync(_bot.GoogleSheetsProvider, _bot.Config.GoogleRangeAll, data);
         await _bot.FinalizeStatusMessageAsync(statusMessage);
     }
