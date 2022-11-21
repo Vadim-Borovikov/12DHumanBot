@@ -7,8 +7,6 @@ internal class Figure : IComparable<Figure>
     public string? Name;
     public string? Comment;
 
-    public byte GetLength() => (byte) Vertices.Count;
-
     public string GetCode() => Vertex.GetCode(Vertices);
 
     public Figure(IEnumerable<Vertex> vertices, string? name = null, string? comment = null) : this(name, comment)
@@ -67,6 +65,8 @@ internal class Figure : IComparable<Figure>
             Comment = Comment,
         };
     }
+
+    private byte GetLength() => (byte) Vertices.Count;
 
     public static Dictionary<byte, string>? Types;
 

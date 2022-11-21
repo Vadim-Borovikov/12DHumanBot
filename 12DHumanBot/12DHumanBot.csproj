@@ -9,8 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="AbstractBot" Version="49.0.0" />
-    <PackageReference Include="GryphonUtilities" Version="3.1.0" />
+    <PackageReference Include="AbstractBot" Version="57.0.2" />
   </ItemGroup>
 
 </Project>
