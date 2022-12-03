@@ -10,8 +10,5 @@ internal sealed class UpdateCommand : CommandBaseCustom<Bot, Config>
 
     public UpdateCommand(Bot bot) : base(bot, "update", "обновить базу из рабочего листа") { }
 
-    public override Task ExecuteAsync(Message message, bool fromChat, string? payload)
-    {
-        return Bot.Manager.Update(message.Chat);
-    }
+    public override Task ExecuteAsync(Message message, Chat chat, string? payload) => Bot.Manager.Update(chat);
 }

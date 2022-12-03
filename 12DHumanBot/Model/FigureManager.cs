@@ -1,7 +1,7 @@
-﻿using GoogleSheetsManager;
+﻿using AbstractBot;
+using GoogleSheetsManager;
 using GryphonUtilities;
 using Telegram.Bot.Types;
-using Telegram.Bot.Types.Enums;
 
 namespace _12DHumanBot.Model;
 
@@ -20,63 +20,61 @@ internal sealed class FigureManager
 
     public async Task Load(Chat chat)
     {
-        Message statusMessage = await _bot.SendTextMessageAsync(chat, "_Загружаю базу…_", ParseMode.MarkdownV2);
-        SheetData<FigureInfo> data = await DataManager<FigureInfo>.LoadAsync(_bot.GoogleSheetsProvider,
-            _bot.Config.GoogleRangeAll, additionalConverters: AdditionalConverters);
-
-        _vertices = data.Instances
-                        .Where(i => i.Length == 1)
-                        .Select(i => i.Convert())
-                        .OfType<Vertex>()
-                        .ToDictionary(v => v.Number, v => v);
-
-        _figures = data.Instances
-                       .Where(i => i.Length > 1)
-                       .Select(i => i.Convert(_vertices))
-                       .RemoveNulls()
-                       .ToDictionary(f => f.GetCode(), f => f);
-
-        foreach (Vertex v in _vertices.Values)
+        await using (await StatusMessage.CreateAsync(_bot, chat, "Загружаю базу", GetStatusPostfixLoad))
         {
-            _figures[v.GetCode()] = v;
-        }
+            SheetData<FigureInfo> data = await DataManager<FigureInfo>.LoadAsync(_bot.GoogleSheetsProvider,
+                _bot.Config.GoogleRangeAll, additionalConverters: AdditionalConverters);
 
-        await _bot.FinalizeStatusMessageAsync(statusMessage,
-            $"{Environment.NewLine}Загружено фигур: {_figures.Count}\\.");
+            _vertices = data.Instances
+                            .Where(i => i.Length == 1)
+                            .Select(i => i.Convert())
+                            .OfType<Vertex>()
+                            .ToDictionary(v => v.Number, v => v);
+
+            _figures = data.Instances
+                           .Where(i => i.Length > 1)
+                           .Select(i => i.Convert(_vertices))
+                           .RemoveNulls()
+                           .ToDictionary(f => f.GetCode(), f => f);
+
+            foreach (Vertex v in _vertices.Values)
+            {
+                _figures[v.GetCode()] = v;
+            }
+
+        }
     }
 
     public async Task Generate(Chat chat)
     {
-        Message statusMessage = await _bot.SendTextMessageAsync(chat, "_Генерирую фигуры…_", ParseMode.MarkdownV2);
-
-        _vertices = new Dictionary<byte, Vertex>();
-        _figures = new Dictionary<string, Figure>();
-
-        for (byte b = 1; b <= _bot.Config.MaxLength; ++b)
+        await using (await StatusMessage.CreateAsync(_bot, chat, "Генерирую фигуры", GetStatusPostfixGenerate))
         {
-            Vertex v = new(b);
-            _vertices[b] = v;
+            _vertices = new Dictionary<byte, Vertex>();
+            _figures = new Dictionary<string, Figure>();
 
-            List<Figure> newFigures = new();
-            foreach (Figure f in _figures.Values)
+            for (byte b = 1; b <= _bot.Config.MaxLength; ++b)
             {
-                List<Vertex> vertices = new(f.Vertices)
+                Vertex v = new(b);
+                _vertices[b] = v;
+
+                List<Figure> newFigures = new();
+                foreach (Figure f in _figures.Values)
                 {
-                    v
-                };
-                Figure newFigure = new(vertices);
-                newFigures.Add(newFigure);
-            }
+                    List<Vertex> vertices = new(f.Vertices)
+                    {
+                        v
+                    };
+                    Figure newFigure = new(vertices);
+                    newFigures.Add(newFigure);
+                }
 
-            _figures[v.GetCode()] = v;
-            foreach (Figure f in newFigures)
-            {
-                _figures[f.GetCode()] = f;
+                _figures[v.GetCode()] = v;
+                foreach (Figure f in newFigures)
+                {
+                    _figures[f.GetCode()] = f;
+                }
             }
         }
-
-        await _bot.FinalizeStatusMessageAsync(statusMessage,
-            $"{Environment.NewLine}Создано фигур: {_figures.Count}\\.");
 
         List<string> titles =
             await GoogleSheetsManager.Utils.LoadTitlesAsync(_bot.GoogleSheetsProvider, _bot.Config.GoogleRangeAll);
@@ -101,22 +99,21 @@ internal sealed class FigureManager
             throw new NullReferenceException(nameof(_figures));
         }
 
-        Message statusMessage =
-            await _bot.SendTextMessageAsync(chat, "_Обновляю базу данными из рабочего листа…_", ParseMode.MarkdownV2);
-
-        const int sheetIndex = 1;
-        SheetData<FigureInfo> data = await DataManager<FigureInfo>.LoadAsync(_bot.GoogleSheetsProvider,
-            _bot.Config.GoogleRange, sheetIndex, additionalConverters: AdditionalConverters);
-        foreach (Figure f in data.Instances
-                                 .Select(i => i.Convert(_vertices))
-                                 .RemoveNulls())
+        SheetData<FigureInfo> data;
+        await using (await StatusMessage.CreateAsync(_bot, chat, "Обновляю базу данными из рабочего листа"))
         {
-            Figure figure = _figures[f.GetCode()];
-            figure.Name = f.Name;
-            figure.Comment = f.Comment;
+            const int sheetIndex = 1;
+            data = await DataManager<FigureInfo>.LoadAsync(_bot.GoogleSheetsProvider, _bot.Config.GoogleRange,
+                sheetIndex, additionalConverters: AdditionalConverters);
+            foreach (Figure f in data.Instances
+                                     .Select(i => i.Convert(_vertices))
+                                     .RemoveNulls())
+            {
+                Figure figure = _figures[f.GetCode()];
+                figure.Name = f.Name;
+                figure.Comment = f.Comment;
+            }
         }
-
-        await _bot.FinalizeStatusMessageAsync(statusMessage);
 
         await Save(chat, _figures.Values, data.Titles);
     }
@@ -129,44 +126,46 @@ internal sealed class FigureManager
         }
 
         string title = string.Format(_bot.Config.GoogleRangeWorkingTemplate, code);
-        Message statusMessage =
-            await _bot.SendTextMessageAsync(chat, $"_Настраиваю рабочий лист для {code}…_", ParseMode.MarkdownV2);
-        const int sheetIndex = 1;
-        await GoogleSheetsManager.Utils.RenameSheetAsync(_bot.GoogleSheetsProvider, sheetIndex, title);
-
-        Figure figure = _figures[code];
-        SortedSet<Figure> subfigures =
-            new(_figures.Values.Where(f => f.Vertices.All(v => figure.Vertices.Contains(v))));
-
-        List<Figure> sorted = new();
-        while (subfigures.Count > 1)
+        await using (await StatusMessage.CreateAsync(_bot, chat, $"Настраиваю рабочий лист для {code}"))
         {
-            Figure first = subfigures.First();
-            sorted.Add(first);
-            subfigures.Remove(first);
-            Figure pair = GetComplimentary(first, figure);
-            sorted.Add(pair);
-            subfigures.Remove(pair);
+            const int sheetIndex = 1;
+            await GoogleSheetsManager.Utils.RenameSheetAsync(_bot.GoogleSheetsProvider, sheetIndex, title);
+
+            Figure figure = _figures[code];
+            SortedSet<Figure> subfigures =
+                new(_figures.Values.Where(f => f.Vertices.All(v => figure.Vertices.Contains(v))));
+
+            List<Figure> sorted = new();
+            while (subfigures.Count > 1)
+            {
+                Figure first = subfigures.First();
+                sorted.Add(first);
+                subfigures.Remove(first);
+                Figure pair = GetComplimentary(first, figure);
+                sorted.Add(pair);
+                subfigures.Remove(pair);
+            }
+            sorted.Add(subfigures.First());
+
+            Figure maxFigure = _figures.Values.OrderDescending().First();
+            Figure complimentary = GetComplimentary(figure, maxFigure);
+            sorted.Add(complimentary);
+
+            string range = $"{title}!{_bot.Config.GoogleRange}";
+
+            await _bot.GoogleSheetsProvider.ClearValuesAsync(range);
+
+            List<FigureInfo> infos = sorted.Select(f => f.Convert()).ToList();
+            List<string> titles =
+                await GoogleSheetsManager.Utils.LoadTitlesAsync(_bot.GoogleSheetsProvider, _bot.Config.GoogleRange);
+            SheetData<FigureInfo> data = new(infos, titles);
+            await DataManager<FigureInfo>.SaveAsync(_bot.GoogleSheetsProvider, range, data);
         }
-        sorted.Add(subfigures.First());
-
-        Figure maxFigure = _figures.Values.OrderDescending().First();
-        Figure complimentary = GetComplimentary(figure, maxFigure);
-        sorted.Add(complimentary);
-
-        string range = $"{title}!{_bot.Config.GoogleRange}";
-
-        await _bot.GoogleSheetsProvider.ClearValuesAsync(range);
-
-        List<FigureInfo> infos = sorted.Select(f => f.Convert()).ToList();
-        List<string> titles =
-            await GoogleSheetsManager.Utils.LoadTitlesAsync(_bot.GoogleSheetsProvider, _bot.Config.GoogleRange);
-        SheetData<FigureInfo> data = new(infos, titles);
-        await DataManager<FigureInfo>.SaveAsync(_bot.GoogleSheetsProvider, range, data);
-
-        await _bot.FinalizeStatusMessageAsync(statusMessage);
         return true;
     }
+
+    private string GetStatusPostfixLoad() => $"{Environment.NewLine}Загружено фигур: {_figures?.Count}\\.";
+    private string GetStatusPostfixGenerate() => $"{Environment.NewLine}Создано фигур: {_figures?.Count}\\.";
 
     private Figure GetComplimentary(Figure current, Figure full)
     {
@@ -182,11 +181,11 @@ internal sealed class FigureManager
 
     private async Task Save(Chat chat, IEnumerable<Figure> figures, IList<string> titles)
     {
-        Message statusMessage =
-            await _bot.SendTextMessageAsync(chat, "_Сохраняю базу в таблицу…_", ParseMode.MarkdownV2);
-        SheetData<FigureInfo> data = new(figures.Order().Select(f => f.Convert()).ToList(), titles);
-        await DataManager<FigureInfo>.SaveAsync(_bot.GoogleSheetsProvider, _bot.Config.GoogleRangeAll, data);
-        await _bot.FinalizeStatusMessageAsync(statusMessage);
+        await using (await StatusMessage.CreateAsync(_bot, chat, "Сохраняю базу в таблицу"))
+        {
+            SheetData<FigureInfo> data = new(figures.Order().Select(f => f.Convert()).ToList(), titles);
+            await DataManager<FigureInfo>.SaveAsync(_bot.GoogleSheetsProvider, _bot.Config.GoogleRangeAll, data);
+        }
     }
 
     private static readonly Dictionary<Type, Func<object?, object?>> AdditionalConverters = new()

@@ -10,8 +10,5 @@ internal sealed class GenerateCommand : CommandBaseCustom<Bot, Config>
 
     public GenerateCommand(Bot bot) : base(bot, "generate", "сгенерировать базу с нуля") { }
 
-    public override Task ExecuteAsync(Message message, bool fromChat, string? payload)
-    {
-        return Bot.Manager.Generate(message.Chat);
-    }
+    public override Task ExecuteAsync(Message message, Chat chat, string? payload) => Bot.Manager.Generate(chat);
 }

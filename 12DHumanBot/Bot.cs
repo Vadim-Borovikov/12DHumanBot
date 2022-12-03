@@ -2,16 +2,24 @@
 using _12DHumanBot.Model;
 using AbstractBot;
 using AbstractBot.Commands;
+using GoogleSheetsManager.Providers;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 
 namespace _12DHumanBot;
 
-public sealed class Bot : BotBaseGoogleSheets<Bot, Config>
+public sealed class Bot : BotBaseCustom<Config>, IDisposable
 {
+    internal readonly SheetsProvider GoogleSheetsProvider;
     internal readonly FigureManager Manager;
 
-    public Bot(Config config) : base(config) => Manager = new FigureManager(this);
+    public Bot(Config config) : base(config)
+    {
+        GoogleSheetsProvider = new SheetsProvider(config, config.GoogleSheetId);
+        Manager = new FigureManager(this);
+    }
+
+    public void Dispose() => GoogleSheetsProvider.Dispose();
 
     public override async Task StartAsync(CancellationToken cancellationToken)
     {
@@ -33,7 +41,7 @@ public sealed class Bot : BotBaseGoogleSheets<Bot, Config>
         }
     }
 
-    protected override async Task ProcessTextMessageAsync(Message textMessage, bool fromChat,
+    protected override async Task ProcessTextMessageAsync(Message textMessage, Chat senderChat,
         CommandBase? command = null, string? payload = null)
     {
         if (textMessage.Text is not null)
@@ -45,6 +53,6 @@ public sealed class Bot : BotBaseGoogleSheets<Bot, Config>
             }
         }
 
-        await base.ProcessTextMessageAsync(textMessage, fromChat, command, payload);
+        await base.ProcessTextMessageAsync(textMessage, senderChat, command, payload);
     }
 }
