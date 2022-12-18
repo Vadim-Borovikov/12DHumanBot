@@ -1,5 +1,5 @@
 using _12DHumanBot.Web.Models;
-using AbstractBot;
+using GryphonUtilities;
 using Microsoft.Extensions.Options;
 
 namespace _12DHumanBot.Web;
@@ -8,7 +8,9 @@ internal static class Program
 {
     public static void Main(string[] args)
     {
-        Utils.LogManager.DeleteExceptionLog();
+        Logger.DeleteExceptionLog();
+        TimeManager timeManager = new();
+        Logger logger = new(timeManager);
         try
         {
             WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
@@ -18,7 +20,10 @@ internal static class Program
             {
                 throw new NullReferenceException("Can't load config.");
             }
-            Utils.StartLogWith(config.SystemTimeZoneIdLogs);
+
+            timeManager = new TimeManager(config.SystemTimeZoneIdLogs);
+            logger = new Logger(timeManager);
+            logger.LogStartup();
 
             IServiceCollection services = builder.Services;
             services.AddControllersWithViews().AddNewtonsoftJson();
@@ -41,7 +46,7 @@ internal static class Program
         }
         catch (Exception ex)
         {
-            Utils.LogManager.LogException(ex);
+            logger.LogException(ex);
         }
     }
 

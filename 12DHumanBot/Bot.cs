@@ -1,32 +1,27 @@
 ﻿using _12DHumanBot.Commands;
 using _12DHumanBot.Model;
-using AbstractBot;
-using AbstractBot.Commands;
-using GoogleSheetsManager.Providers;
+using AbstractBot.Bots;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 
 namespace _12DHumanBot;
 
-public sealed class Bot : BotBaseCustom<Config>, IDisposable
+public sealed class Bot : BotWithSheets<Config>
 {
-    internal readonly SheetsProvider GoogleSheetsProvider;
-    internal readonly FigureManager Manager;
-
     public Bot(Config config) : base(config)
     {
-        GoogleSheetsProvider = new SheetsProvider(config, config.GoogleSheetId);
-        Manager = new FigureManager(this);
-    }
+        GoogleSheetsManager.Documents.Document document = DocumentsManager.GetOrAdd(Config.GoogleSheetId);
+        _manager = new FigureManager(this, document);
 
-    public void Dispose() => GoogleSheetsProvider.Dispose();
+        Operations.Add(new GenerateCommand(this, _manager));
+        Operations.Add(new LoadCommand(this, _manager));
+        Operations.Add(new UpdateCommand(this, _manager));
+
+        Operations.Add(new SliceOperation(this, _manager));
+    }
 
     public override async Task StartAsync(CancellationToken cancellationToken)
     {
-        Commands.Add(new GenerateCommand(this));
-        Commands.Add(new LoadCommand(this));
-        Commands.Add(new UpdateCommand(this));
-
         await base.StartAsync(cancellationToken);
 
         long? logsChatId = Config.SuperAdminId;
@@ -37,22 +32,9 @@ public sealed class Bot : BotBaseCustom<Config>, IDisposable
                 Id = logsChatId.Value,
                 Type = ChatType.Private
             };
-            await Manager.Load(logsChat);
+            await _manager.Load(logsChat);
         }
     }
 
-    protected override async Task ProcessTextMessageAsync(Message textMessage, Chat senderChat,
-        CommandBase? command = null, string? payload = null)
-    {
-        if (textMessage.Text is not null)
-        {
-            bool separated = await Manager.TrySeparate(textMessage.Chat, textMessage.Text);
-            if (separated)
-            {
-                return;
-            }
-        }
-
-        await base.ProcessTextMessageAsync(textMessage, senderChat, command, payload);
-    }
+    private readonly FigureManager _manager;
 }

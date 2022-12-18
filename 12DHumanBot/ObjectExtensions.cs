@@ -1,9 +1,9 @@
 ﻿using _12DHumanBot.Model;
-using GryphonUtilities;
+using GryphonUtilities.Extensions;
 
 namespace _12DHumanBot;
 
-internal static class Utils
+internal static class ObjectExtensions
 {
     public static List<byte>? ToBytes(this object? o)
     {

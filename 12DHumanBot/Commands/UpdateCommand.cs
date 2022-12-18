@@ -1,14 +1,21 @@
-﻿using AbstractBot;
-using AbstractBot.Commands;
+﻿using _12DHumanBot.Model;
+using AbstractBot.Operations;
 using Telegram.Bot.Types;
 
 namespace _12DHumanBot.Commands;
 
-internal sealed class UpdateCommand : CommandBaseCustom<Bot, Config>
+internal sealed class UpdateCommand : CommandOperation
 {
-    public override BotBase.AccessType Access => BotBase.AccessType.Admins;
+    protected override byte MenuOrder => 4;
 
-    public UpdateCommand(Bot bot) : base(bot, "update", "обновить базу из рабочего листа") { }
+    protected override Access AccessLevel => Access.Admin;
 
-    public override Task ExecuteAsync(Message message, Chat chat, string? payload) => Bot.Manager.Update(chat);
+    public UpdateCommand(Bot bot, FigureManager manager) : base(bot, "update", "обновить базу из рабочего листа")
+    {
+        _manager = manager;
+    }
+
+    protected override Task ExecuteAsync(Message message, long _, string? __) => _manager.Update(message.Chat);
+
+    private readonly FigureManager _manager;
 }

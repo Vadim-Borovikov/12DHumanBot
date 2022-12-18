@@ -1,11 +1,21 @@
-﻿using AbstractBot.Commands;
+﻿using _12DHumanBot.Model;
+using AbstractBot.Operations;
 using Telegram.Bot.Types;
 
 namespace _12DHumanBot.Commands;
 
-internal sealed class LoadCommand : CommandBaseCustom<Bot, Config>
+internal sealed class LoadCommand : CommandOperation
 {
-    public LoadCommand(Bot bot) : base(bot, "load", "загрузить базу из таблицы") { }
+    protected override byte MenuOrder => 3;
 
-    public override Task ExecuteAsync(Message message, Chat chat, string? payload) => Bot.Manager.Load(chat);
+    protected override Access AccessLevel => Access.Admin;
+
+    public LoadCommand(Bot bot, FigureManager manager) : base(bot, "load", "загрузить базу из таблицы")
+    {
+        _manager = manager;
+    }
+
+    protected override Task ExecuteAsync(Message message, long _, string? __) => _manager.Load(message.Chat);
+
+    private readonly FigureManager _manager;
 }
