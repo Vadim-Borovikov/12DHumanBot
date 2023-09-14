@@ -137,15 +137,21 @@ internal sealed class FigureManager
                 Figure first = subfigures.First();
                 sorted.Add(first);
                 subfigures.Remove(first);
-                Figure pair = GetComplimentary(first, figure);
-                sorted.Add(pair);
-                subfigures.Remove(pair);
+                Figure? pair = GetComplimentary(first, figure);
+                if (pair is not null)
+                {
+                    sorted.Add(pair);
+                    subfigures.Remove(pair);
+                }
             }
             sorted.Add(subfigures.First());
 
             Figure maxFigure = _figures.Values.OrderDescending().First();
-            Figure complimentary = GetComplimentary(figure, maxFigure);
-            sorted.Add(complimentary);
+            Figure? complimentary = GetComplimentary(figure, maxFigure);
+            if (complimentary is not null)
+            {
+                sorted.Add(complimentary);
+            }
 
             await working.ClearAsync(_bot.Config.GoogleRange);
 
@@ -159,7 +165,7 @@ internal sealed class FigureManager
     private string GetStatusPostfixLoad() => $"{Environment.NewLine}Загружено фигур: {_figures.Count}\\.";
     private string GetStatusPostfixGenerate() => $"{Environment.NewLine}Создано фигур: {_figures.Count}\\.";
 
-    private Figure GetComplimentary(Figure current, Figure full)
+    private Figure? GetComplimentary(Figure current, Figure full)
     {
         if (_figures is null)
         {
@@ -168,7 +174,7 @@ internal sealed class FigureManager
 
         SortedSet<Vertex> vertices = new(full.Vertices.Except(current.Vertices));
         string code = Vertex.GetCode(vertices);
-        return _figures[code];
+        return _figures.GetValueOrDefault(code);
     }
 
     private async Task Save(Chat chat, IEnumerable<Figure> figures, IList<string> titles)
